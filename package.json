@@ -1,0 +1,20 @@
+{
+  "name": "projeto_integrador_5",
+  "version": "1.0.0",
+  "description": "Projeto Integrador 5 da GRAN Faculdade",
+  "homepage": "https://github.com/ericamila/projeto_integrador_5#readme",
+  "bugs": {
+    "url": "https://github.com/ericamila/projeto_integrador_5/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ericamila/projeto_integrador_5.git"
+  },
+  "license": "ISC",
+  "author": "Erica Cunha",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
