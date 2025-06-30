@@ -1,7 +1,7 @@
 const http = require('http');
 const server = http.createServer((req, res) => {
-    res.writeHead(200, {'Content-Type': 'text/plain'});
-    res.end('Olá, Mundo!')
+    res.writeHead(200, {'Content-Type': 'text/plain', 'Charset': 'UTF-8'});
+    res.end('Olá, Mundo! 2')
 });
 
 const PORT = 3000;
