@@ -1,0 +1,439 @@
+import React, { useState, useEffect } from 'react';
+
+// Mock data - Em uma aplicação real, estes dados viriam do seu backend.
+const initialFornecedores = [
+  { id: 1, nome: 'Fornecedor 1', cnpj: '12.345.678/0001-99', endereco: 'Rua xyz, 123', telefone: '(11) 98765-4321', email: 'contato@fornecedor1.com', contato: 'Carlos Silva' },
+  { id: 2, nome: 'Fornecedor 2', cnpj: '98.765.432/0001-11', endereco: 'Avenida abc, 456', telefone: '(21) 12345-6789', email: 'vendas@fornecedor2.com', contato: 'Ana Costa' },
+];
+
+const initialProdutos = [
+  { id: 1, nome: 'Notebook', codigoBarras: '7890123456789', descricao: 'Notebook bom', quantidade: 50, categoria: 'Eletrônicos', dataValidade: '', imagem: 'https://placehold.co/300x400/e2e8f0/4a5568?text=Notebook' },
+  { id: 2, nome: 'Arroz', codigoBarras: '7899876543210', descricao: 'Pacote de 1kg', quantidade: 200, categoria: 'Alimentos', dataValidade: '2025-12-31', imagem: 'https://placehold.co/300x400/e2e8f0/4a5568?text=Arroz' },
+];
+
+
+// Componente para o Cabeçalho
+const Header = ({ setPage }) => (
+  <header>
+    <div>
+      <div>
+        <div>
+          <span>Gestão de Estoque</span>
+        </div>
+        <nav>
+          <button onClick={() => setPage('fornecedores')}>Fornecedores</button>
+          <button onClick={() => setPage('produtos')}>Produtos</button>
+          <button onClick={() => setPage('associacao')}>Associação</button>
+        </nav>
+      </div>
+    </div>
+  </header>
+);
+
+// Componente para a página de Fornecedores
+const FornecedoresPage = ({ fornecedores, setFornecedores }) => {
+  const [formState, setFormState] = useState({ nome: '', cnpj: '', endereco: '', telefone: '', email: '', contato: '' });
+  const [errors, setErrors] = useState({});
+  const [showForm, setShowForm] = useState(false);
+
+  const validate = () => {
+    const newErrors = {};
+    if (!formState.nome) newErrors.nome = 'Nome da empresa é obrigatório.';
+    if (!formState.cnpj) newErrors.cnpj = 'CNPJ é obrigatório.';
+    if (fornecedores.some(f => f.cnpj === formState.cnpj)) newErrors.cnpj = 'Fornecedor com este CNPJ já está cadastrado!';
+    if (!formState.endereco) newErrors.endereco = 'Endereço é obrigatório.';
+    if (!formState.telefone) newErrors.telefone = 'Telefone é obrigatório.';
+    if (!formState.email) newErrors.email = 'E-mail é obrigatório.';
+    else if (!/\S+@\S+\.\S+/.test(formState.email)) newErrors.email = 'E-mail inválido.';
+    if (!formState.contato) newErrors.contato = 'Contato principal é obrigatório.';
+    return newErrors;
+  };
+
+  const handleChange = (e) => {
+    setFormState({ ...formState, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const newErrors = validate();
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length === 0) {
+      // Em uma aplicação real, aqui você faria uma chamada POST para o seu backend.
+      const newFornecedor = { id: Date.now(), ...formState };
+      setFornecedores([...fornecedores, newFornecedor]);
+      alert('Fornecedor cadastrado com sucesso!');
+      setFormState({ nome: '', cnpj: '', endereco: '', telefone: '', email: '', contato: '' });
+      setShowForm(false);
+    }
+  };
+
+  return (
+    <div>
+      <div>
+        <h1>Cadastro de Fornecedores</h1>
+        <button onClick={() => setShowForm(!showForm)}>
+          {showForm ? 'Cancelar' : 'Novo Fornecedor'}
+        </button>
+      </div>
+
+      {showForm && (
+        <div>
+          <form onSubmit={handleSubmit}>
+            {/* Campos do formulário */}
+            <div>
+              <label>Nome da Empresa</label>
+              <input type="text" name="nome" value={formState.nome} onChange={handleChange} placeholder="Insira o nome da empresa" />
+              {errors.nome && <p>{errors.nome}</p>}
+            </div>
+            <div>
+              <label>CNPJ</label>
+              <input type="text" name="cnpj" value={formState.cnpj} onChange={handleChange} placeholder="00.000.000/0000-00" />
+              {errors.cnpj && <p>{errors.cnpj}</p>}
+            </div>
+            <div>
+              <label>Endereço</label>
+              <input type="text" name="endereco" value={formState.endereco} onChange={handleChange} placeholder="Insira o endereço completo da empresa" />
+              {errors.endereco && <p>{errors.endereco}</p>}
+            </div>
+            <div>
+              <label>Telefone</label>
+              <input type="text" name="telefone" value={formState.telefone} onChange={handleChange} placeholder="(00) 00000-0000" />
+              {errors.telefone && <p>{errors.telefone}</p>}
+            </div>
+            <div>
+              <label>E-mail</label>
+              <input type="email" name="email" value={formState.email} onChange={handleChange} placeholder="exemplo@fornecedor.com" />
+              {errors.email && <p>{errors.email}</p>}
+            </div>
+            <div>
+              <label>Contato Principal</label>
+              <input type="text" name="contato" value={formState.contato} onChange={handleChange} placeholder="Nome do contato principal" />
+              {errors.contato && <p>{errors.contato}</p>}
+            </div>
+            <div>
+              <button type="submit">Cadastrar</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      <div>
+        <h2>Fornecedores Cadastrados</h2>
+        <div>
+          <table>
+            <thead>
+              <tr>
+                <th>Empresa</th>
+                <th>CNPJ</th>
+                <th>Contato</th>
+                <th>Email</th>
+              </tr>
+            </thead>
+            <tbody>
+              {fornecedores.map(f => (
+                <tr key={f.id}>
+                  <td>{f.nome}</td>
+                  <td>{f.cnpj}</td>
+                  <td>{f.contato}</td>
+                  <td>{f.email}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+// Componente para a página de Produtos
+const ProdutosPage = ({ produtos, setProdutos }) => {
+  const [formState, setFormState] = useState({ nome: '', codigoBarras: '', descricao: '', quantidade: '', categoria: 'Eletrônicos', dataValidade: '', imagem: '' });
+  const [errors, setErrors] = useState({});
+  const [showForm, setShowForm] = useState(false);
+
+  const validate = () => {
+    const newErrors = {};
+    if (!formState.nome) newErrors.nome = 'Nome do produto é obrigatório.';
+    if (!formState.codigoBarras) newErrors.codigoBarras = 'Código de barras é obrigatório.';
+    if (produtos.some(p => p.codigoBarras === formState.codigoBarras)) newErrors.codigoBarras = 'Produto com este código de barras já está cadastrado!';
+    if (!formState.descricao) newErrors.descricao = 'Descrição é obrigatória.';
+    if (!formState.quantidade || formState.quantidade < 0) newErrors.quantidade = 'Quantidade inválida.';
+    if (!formState.categoria) newErrors.categoria = 'Categoria é obrigatória.';
+    return newErrors;
+  };
+
+  const handleChange = (e) => {
+    setFormState({ ...formState, [e.target.name]: e.target.value });
+  };
+  
+  const handleImageChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setFormState({ ...formState, imagem: event.target.result });
+      };
+      reader.readAsDataURL(e.target.files[0]);
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const newErrors = validate();
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length === 0) {
+      // Em uma aplicação real, aqui você faria uma chamada POST para o seu backend.
+      const newProduto = { 
+        id: Date.now(), 
+        ...formState, 
+        imagem: formState.imagem || `https://placehold.co/400x400/e2e8f0/4a5568?text=${formState.nome.substring(0,10)}`
+      };
+      setProdutos([...produtos, newProduto]);
+      alert('Produto cadastrado com sucesso!');
+      setFormState({ nome: '', codigoBarras: '', descricao: '', quantidade: '', categoria: 'Eletrônicos', dataValidade: '', imagem: '' });
+      setShowForm(false);
+    }
+  };
+
+  return (
+    <div>
+      <div>
+        <h1>Cadastro de Produtos</h1>
+        <button onClick={() => setShowForm(!showForm)}>
+          {showForm ? 'Cancelar' : 'Novo Produto'}
+        </button>
+      </div>
+
+      {showForm && (
+        <div>
+          <form onSubmit={handleSubmit}>
+            {/* Campos do formulário */}
+            <div>
+              <label>Nome do Produto</label>
+              <input type="text" name="nome" value={formState.nome} onChange={handleChange} placeholder="Insira o nome do produto" />
+              {errors.nome && <p>{errors.nome}</p>}
+            </div>
+            <div>
+              <label>Código de Barras</label>
+              <input type="text" name="codigoBarras" value={formState.codigoBarras} onChange={handleChange} placeholder="Insira o código de barras" />
+              {errors.codigoBarras && <p>{errors.codigoBarras}</p>}
+            </div>
+            <div>
+              <label>Descrição</label>
+              <textarea name="descricao" value={formState.descricao} onChange={handleChange} placeholder="Descreva brevemente o produto" rows="3"></textarea>
+              {errors.descricao && <p>{errors.descricao}</p>}
+            </div>
+            <div>
+              <label>Quantidade em Estoque</label>
+              <input type="number" name="quantidade" value={formState.quantidade} onChange={handleChange} placeholder="Quantidade disponível" />
+              {errors.quantidade && <p>{errors.quantidade}</p>}
+            </div>
+            <div>
+              <label>Categoria</label>
+              <select name="categoria" value={formState.categoria} onChange={handleChange}>
+                <option>Eletrônicos</option>
+                <option>Alimentos</option>
+                <option>Vestuário</option>
+                <option>Outro</option>
+              </select>
+              {errors.categoria && <p>{errors.categoria}</p>}
+            </div>
+            <div>
+              <label>Data de Validade (Opcional)</label>
+              <input type="date" name="dataValidade" value={formState.dataValidade} onChange={handleChange} />
+            </div>
+            <div>
+              <label>Imagem do Produto (Opcional)</label>
+              <input type="file" accept="image/*" onChange={handleImageChange} />
+            </div>
+            <div>
+              <button type="submit">Cadastrar</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      <div>
+        {produtos.map(p => (
+          <div key={p.id}>
+            <img src={p.imagem} alt={p.nome} onError={(e) => { e.target.onerror = null; e.target.src=`https://placehold.co/400x400/e2e8f0/4a5568?text=Imagem+N/A`; }}/>
+            <div>
+              <h3>{p.nome}</h3>
+              <p>{p.codigoBarras}</p>
+              <p>{p.descricao}</p>
+              <div>
+                <span>{p.categoria}</span>
+                <span>{p.quantidade}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Componente para a página de Associação
+const AssociacaoPage = ({ produtos, fornecedores, associacoes, setAssociacoes }) => {
+  const [selectedProdutoId, setSelectedProdutoId] = useState('');
+  const [selectedFornecedorId, setSelectedFornecedorId] = useState('');
+
+  const selectedProduto = produtos.find(p => p.id === parseInt(selectedProdutoId));
+  const fornecedoresAssociadosIds = associacoes[selectedProdutoId] || [];
+  const fornecedoresAssociados = fornecedores.filter(f => fornecedoresAssociadosIds.includes(f.id));
+
+  const handleAssociar = () => {
+    if (!selectedProdutoId || !selectedFornecedorId) {
+      alert('Por favor, selecione um produto e um fornecedor.');
+      return;
+    }
+
+    const fornecedorIdNum = parseInt(selectedFornecedorId);
+    if (fornecedoresAssociadosIds.includes(fornecedorIdNum)) {
+      alert('Fornecedor já está associado a este produto!');
+      return;
+    }
+    
+    // Em uma aplicação real, aqui você faria uma chamada POST para o seu backend.
+    const newAssociacoes = {
+      ...associacoes,
+      [selectedProdutoId]: [...fornecedoresAssociadosIds, fornecedorIdNum]
+    };
+    setAssociacoes(newAssociacoes);
+    alert('Fornecedor associado com sucesso ao produto!');
+    setSelectedFornecedorId('');
+  };
+
+  const handleDesassociar = (fornecedorId) => {
+    // Em uma aplicação real, aqui você faria uma chamada DELETE para o seu backend.
+    const updatedAssociacoes = {
+      ...associacoes,
+      [selectedProdutoId]: fornecedoresAssociadosIds.filter(id => id !== fornecedorId)
+    };
+    setAssociacoes(updatedAssociacoes);
+    alert('Fornecedor desassociado com sucesso!');
+  };
+
+  return (
+    <div>
+      <h1>Associação de Fornecedor a Produto</h1>
+      
+      <div>
+        <label>Selecione um Produto</label>
+        <select 
+          value={selectedProdutoId} 
+          onChange={(e) => { setSelectedProdutoId(e.target.value); setSelectedFornecedorId(''); }}
+        >
+          <option value="">-- Selecione --</option>
+          {produtos.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+        </select>
+      </div>
+
+      {selectedProduto && (
+        <div>
+          {/* Detalhes do Produto */}
+          <div>
+            <h2>Detalhes do Produto</h2>
+            <img src={selectedProduto.imagem} alt={selectedProduto.nome} onError={(e) => { e.target.onerror = null; e.target.src=`https://placehold.co/400x400/e2e8f0/4a5568?text=Imagem+N/A`; }}/>
+            <p><strong>Nome:</strong> {selectedProduto.nome}</p>
+            <p><strong>Cód. Barras:</strong> {selectedProduto.codigoBarras}</p>
+            <p><strong>Descrição:</strong> {selectedProduto.descricao}</p>
+          </div>
+
+          {/* Associação e Lista */}
+          <div>
+            <h2>Associar Fornecedor</h2>
+            <div>
+              <div>
+                <label>Selecione um Fornecedor</label>
+                <select 
+                  value={selectedFornecedorId} 
+                  onChange={(e) => setSelectedFornecedorId(e.target.value)}
+                >
+                  <option value="">-- Selecione --</option>
+                  {fornecedores.map(f => <option key={f.id} value={f.id}>{f.nome}</option>)}
+                </select>
+              </div>
+              <button onClick={handleAssociar}>Associar</button>
+            </div>
+
+            <h2>Fornecedores Associados</h2>
+            {fornecedoresAssociados.length > 0 ? (
+              <ul>
+                {fornecedoresAssociados.map(f => (
+                  <li key={f.id}>
+                    <div>
+                      <p>{f.nome}</p>
+                      <p>{f.cnpj}</p>
+                    </div>
+                    <button onClick={() => handleDesassociar(f.id)}>
+                      Desassociar</button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>Nenhum fornecedor associado a este produto.</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+
+export default function App() {
+  const [page, setPage] = useState('fornecedores'); // 'fornecedores', 'produtos', 'associacao'
+  
+  // States for our data. In a real app, you might use React Context or a state management library.
+  const [fornecedores, setFornecedores] = useState(initialFornecedores);
+  const [produtos, setProdutos] = useState(initialProdutos);
+  
+  // The key is the product ID, the value is an array of supplier IDs.
+  // Ex: { '1': [1, 2], '2': [2] }
+  const [associacoes, setAssociacoes] = useState({ 1: [1], 2: [2] });
+
+  // This effect simulates loading data from a backend when the app starts.
+  useEffect(() => {
+    // async function fetchData() {
+    //   const fornecedoresRes = await fetch('/api/fornecedores');
+    //   const fornecedoresData = await fornecedoresRes.json();
+    //   setFornecedores(fornecedoresData);
+    //
+    //   const produtosRes = await fetch('/api/produtos');
+    //   const produtosData = await produtosRes.json();
+    //   setProdutos(produtosData);
+    //
+    //   const associacoesRes = await fetch('/api/associacoes');
+    //   const associacoesData = await associacoesRes.json();
+    //   setAssociacoes(associacoesData);
+    // }
+    // fetchData();
+  }, []);
+
+  const renderPage = () => {
+    switch (page) {
+      case 'fornecedores':
+        return <FornecedoresPage fornecedores={fornecedores} setFornecedores={setFornecedores} />;
+      case 'produtos':
+        return <ProdutosPage produtos={produtos} setProdutos={setProdutos} />;
+      case 'associacao':
+        return <AssociacaoPage produtos={produtos} fornecedores={fornecedores} associacoes={associacoes} setAssociacoes={setAssociacoes} />;
+      default:
+        return <FornecedoresPage fornecedores={fornecedores} setFornecedores={setFornecedores} />;
+    }
+  };
+
+  return (
+    <div>
+      <Header setPage={setPage} />
+      <main>
+        {renderPage()}
+      </main>
+      <footer>
+        <p>Projeto Integrador: Full Stack - {new Date().getFullYear()}</p>
+      </footer>
+    </div>
+  );
+}
