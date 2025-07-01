@@ -123,7 +123,6 @@ app.post("/api/fornecedores", (req, res) => {
 
 
 // --- ROTAS DE PRODUTOS ---
-
 app.get("/api/produtos", (req, res) => {
     const sql = "SELECT * FROM produtos";
     db.all(sql, [], (err, rows) => {

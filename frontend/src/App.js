@@ -1,16 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
-// Mock data - Em uma aplicação real, estes dados viriam do seu backend.
-const initialFornecedores = [
-  { id: 1, nome: 'Fornecedor 1', cnpj: '12.345.678/0001-99', endereco: 'Rua xyz, 123', telefone: '(11) 98765-4321', email: 'contato@fornecedor1.com', contato: 'Carlos Silva' },
-  { id: 2, nome: 'Fornecedor 2', cnpj: '98.765.432/0001-11', endereco: 'Avenida abc, 456', telefone: '(21) 12345-6789', email: 'vendas@fornecedor2.com', contato: 'Ana Costa' },
-];
-
-const initialProdutos = [
-  { id: 1, nome: 'Notebook', codigoBarras: '7890123456789', descricao: 'Notebook bom', quantidade: 50, categoria: 'Eletrônicos', dataValidade: '', imagem: 'https://placehold.co/300x400/e2e8f0/4a5568?text=Notebook' },
-  { id: 2, nome: 'Arroz', codigoBarras: '7899876543210', descricao: 'Pacote de 1kg', quantidade: 200, categoria: 'Alimentos', dataValidade: '2025-12-31', imagem: 'https://placehold.co/300x400/e2e8f0/4a5568?text=Arroz' },
-];
-
+const API_URL = 'http://localhost:3001/api';
 
 // Componente para o Cabeçalho
 const Header = ({ setPage }) => (
@@ -53,17 +43,37 @@ const FornecedoresPage = ({ fornecedores, setFornecedores }) => {
     setFormState({ ...formState, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  // Função para submeter o formulário para o backend
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = validate();
     setErrors(newErrors);
+    
     if (Object.keys(newErrors).length === 0) {
-      // Em uma aplicação real, aqui você faria uma chamada POST para o seu backend.
-      const newFornecedor = { id: Date.now(), ...formState };
-      setFornecedores([...fornecedores, newFornecedor]);
-      alert('Fornecedor cadastrado com sucesso!');
-      setFormState({ nome: '', cnpj: '', endereco: '', telefone: '', email: '', contato: '' });
-      setShowForm(false);
+      try {
+        const response = await fetch(`${API_URL}/fornecedores`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formState),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          if (response.status === 409) {
+            setErrors({ cnpj: result.error });
+          } else {
+            throw new Error(result.error || 'Falha ao cadastrar fornecedor.');
+          }
+        } else {
+          alert(result.message);
+          setFormState({ nome: '', cnpj: '', endereco: '', telefone: '', email: '', contato: '' });
+          setShowForm(false);
+          reloadData(); 
+        }
+      } catch (error) {
+        alert(error.message);
+      }
     }
   };
 
@@ -178,21 +188,35 @@ const ProdutosPage = ({ produtos, setProdutos }) => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = validate();
     setErrors(newErrors);
     if (Object.keys(newErrors).length === 0) {
-      // Em uma aplicação real, aqui você faria uma chamada POST para o seu backend.
-      const newProduto = { 
-        id: Date.now(), 
-        ...formState, 
-        imagem: formState.imagem || `https://placehold.co/400x400/e2e8f0/4a5568?text=${formState.nome.substring(0,10)}`
-      };
-      setProdutos([...produtos, newProduto]);
-      alert('Produto cadastrado com sucesso!');
-      setFormState({ nome: '', codigoBarras: '', descricao: '', quantidade: '', categoria: 'Eletrônicos', dataValidade: '', imagem: '' });
-      setShowForm(false);
+      try {
+        const response = await fetch(`${API_URL}/produtos`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formState),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          if (response.status === 409) {
+            setErrors({ codigoBarras: result.error });
+          } else {
+            throw new Error(result.error || 'Falha ao cadastrar produto.');
+          }
+        } else {
+          alert(result.message);
+          setFormState({ nome: '', codigoBarras: '', descricao: '', quantidade: '', categoria: 'Eletrônicos', dataValidade: '', imagem: '' });
+          setShowForm(false);
+          reloadData();
+        }
+      } catch (error) {
+        alert(error.message);
+      }
     }
   };
 
@@ -275,7 +299,7 @@ const ProdutosPage = ({ produtos, setProdutos }) => {
 };
 
 // Componente para a página de Associação
-const AssociacaoPage = ({ produtos, fornecedores, associacoes, setAssociacoes }) => {
+const AssociacaoPage = ({ produtos, fornecedores, associacoes, reloadData }) => {
   const [selectedProdutoId, setSelectedProdutoId] = useState('');
   const [selectedFornecedorId, setSelectedFornecedorId] = useState('');
 
@@ -283,36 +307,44 @@ const AssociacaoPage = ({ produtos, fornecedores, associacoes, setAssociacoes })
   const fornecedoresAssociadosIds = associacoes[selectedProdutoId] || [];
   const fornecedoresAssociados = fornecedores.filter(f => fornecedoresAssociadosIds.includes(f.id));
 
-  const handleAssociar = () => {
+  const handleAssociar = async () => {
     if (!selectedProdutoId || !selectedFornecedorId) {
       alert('Por favor, selecione um produto e um fornecedor.');
       return;
     }
-
-    const fornecedorIdNum = parseInt(selectedFornecedorId);
-    if (fornecedoresAssociadosIds.includes(fornecedorIdNum)) {
-      alert('Fornecedor já está associado a este produto!');
-      return;
-    }
     
-    // Em uma aplicação real, aqui você faria uma chamada POST para o seu backend.
-    const newAssociacoes = {
-      ...associacoes,
-      [selectedProdutoId]: [...fornecedoresAssociadosIds, fornecedorIdNum]
-    };
-    setAssociacoes(newAssociacoes);
-    alert('Fornecedor associado com sucesso ao produto!');
-    setSelectedFornecedorId('');
+    try {
+      const response = await fetch(`${API_URL}/associacoes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ produtoId: selectedProdutoId, fornecedorId: selectedFornecedorId }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+      
+      alert(result.message);
+      setSelectedFornecedorId('');
+      reloadData();
+    } catch (error) {
+      alert(error.message);
+    }
   };
 
-  const handleDesassociar = (fornecedorId) => {
-    // Em uma aplicação real, aqui você faria uma chamada DELETE para o seu backend.
-    const updatedAssociacoes = {
-      ...associacoes,
-      [selectedProdutoId]: fornecedoresAssociadosIds.filter(id => id !== fornecedorId)
-    };
-    setAssociacoes(updatedAssociacoes);
-    alert('Fornecedor desassociado com sucesso!');
+  const handleDesassociar = async (fornecedorId) => {
+    try {
+      const response = await fetch(`${API_URL}/associacoes`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ produtoId: selectedProdutoId, fornecedorId: fornecedorId }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+
+      alert(result.message);
+      reloadData();
+    } catch (error) {
+      alert(error.message);
+    }
   };
 
   return (
@@ -325,7 +357,7 @@ const AssociacaoPage = ({ produtos, fornecedores, associacoes, setAssociacoes })
           value={selectedProdutoId} 
           onChange={(e) => { setSelectedProdutoId(e.target.value); setSelectedFornecedorId(''); }}
         >
-          <option value="">-- Selecione --</option>
+          <option value="">Selecione</option>
           {produtos.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
         </select>
       </div>
@@ -384,44 +416,61 @@ const AssociacaoPage = ({ produtos, fornecedores, associacoes, setAssociacoes })
 
 
 export default function App() {
-  const [page, setPage] = useState('fornecedores'); // 'fornecedores', 'produtos', 'associacao'
+  const [page, setPage] = useState('fornecedores');
   
-  // States for our data. In a real app, you might use React Context or a state management library.
-  const [fornecedores, setFornecedores] = useState(initialFornecedores);
-  const [produtos, setProdutos] = useState(initialProdutos);
-  
-  // The key is the product ID, the value is an array of supplier IDs.
-  // Ex: { '1': [1, 2], '2': [2] }
-  const [associacoes, setAssociacoes] = useState({ 1: [1], 2: [2] });
+  // Os estados agora começam vazios, pois serão preenchidos pela API.
+  const [fornecedores, setFornecedores] = useState([]);
+  const [produtos, setProdutos] = useState([]);
+  const [associacoes, setAssociacoes] = useState({});
+  const [loadingError, setLoadingError] = useState('');
 
-  // This effect simulates loading data from a backend when the app starts.
-  useEffect(() => {
-    // async function fetchData() {
-    //   const fornecedoresRes = await fetch('/api/fornecedores');
-    //   const fornecedoresData = await fornecedoresRes.json();
-    //   setFornecedores(fornecedoresData);
-    //
-    //   const produtosRes = await fetch('/api/produtos');
-    //   const produtosData = await produtosRes.json();
-    //   setProdutos(produtosData);
-    //
-    //   const associacoesRes = await fetch('/api/associacoes');
-    //   const associacoesData = await associacoesRes.json();
-    //   setAssociacoes(associacoesData);
-    // }
-    // fetchData();
+  // Função para buscar todos os dados do backend.
+  // Usamos useCallback para evitar recriações desnecessárias da função.
+  const fetchData = useCallback(async () => {
+    try {
+      const [fornecedoresRes, produtosRes, associacoesRes] = await Promise.all([
+        fetch(`${API_URL}/fornecedores`),
+        fetch(`${API_URL}/produtos`),
+        fetch(`${API_URL}/associacoes`)
+      ]);
+
+      if (!fornecedoresRes.ok || !produtosRes.ok || !associacoesRes.ok) {
+        throw new Error('Falha ao carregar os dados do servidor. Verifique se o backend está rodando.');
+      }
+
+      const fornecedoresData = await fornecedoresRes.json();
+      const produtosData = await produtosRes.json();
+      const associacoesData = await associacoesRes.json();
+
+      setFornecedores(fornecedoresData.data);
+      setProdutos(produtosData.data);
+      setAssociacoes(associacoesData.data);
+      setLoadingError(''); // Limpa erros anteriores
+    } catch (error) {
+      console.error("Erro ao buscar dados:", error);
+      setLoadingError(error.message);
+    }
   }, []);
 
+  // useEffect para carregar os dados quando o componente App é montado.
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
   const renderPage = () => {
+    if (loadingError) {
+      return <div>{loadingError}</div>;
+    }
+    
     switch (page) {
       case 'fornecedores':
-        return <FornecedoresPage fornecedores={fornecedores} setFornecedores={setFornecedores} />;
+        return <FornecedoresPage fornecedores={fornecedores} reloadData={fetchData} />;
       case 'produtos':
-        return <ProdutosPage produtos={produtos} setProdutos={setProdutos} />;
+        return <ProdutosPage produtos={produtos} reloadData={fetchData} />;
       case 'associacao':
-        return <AssociacaoPage produtos={produtos} fornecedores={fornecedores} associacoes={associacoes} setAssociacoes={setAssociacoes} />;
+        return <AssociacaoPage produtos={produtos} fornecedores={fornecedores} associacoes={associacoes} reloadData={fetchData} />;
       default:
-        return <FornecedoresPage fornecedores={fornecedores} setFornecedores={setFornecedores} />;
+        return <FornecedoresPage fornecedores={fornecedores} reloadData={fetchData} />;
     }
   };
 
